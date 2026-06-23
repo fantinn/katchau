@@ -1,13 +1,13 @@
 // ── Firebase Configuration ─────────────────────────────
-// Substitua com suas credenciais do Firebase Console
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SEU_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyBxJmz3HJYpBGF4o_CkAIUs0SvzxJtM_B4",
+  authDomain: "t1npay.firebaseapp.com",
+  databaseURL: "https://t1npay-default-rtdb.firebaseio.com",
+  projectId: "t1npay",
+  storageBucket: "t1npay.firebasestorage.app",
+  messagingSenderId: "1047026760648",
+  appId: "1:1047026760648:web:158c24f2df3cb63b87defd",
+  measurementId: "G-23CKCNXCJT"
 };
 
 // Inicializar Firebase

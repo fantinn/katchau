@@ -27,11 +27,11 @@ const Daily = (() => {
 
       <!-- Summary cards -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-        <div class="summary-card" style="background:rgba(239,68,68,.1)">
+        <div class="summary-card" style="background:rgba(239,68,68,.1);text-align:center;padding:16px;border-radius:var(--radius)">
           <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Gastos hoje</div>
           <div style="font-size:24px;font-weight:700;color:var(--red)">${Engine.fmt(Math.abs(totalExpense))}</div>
         </div>
-        <div class="summary-card" style="background:rgba(34,197,94,.1)">
+        <div class="summary-card" style="background:rgba(34,197,94,.1);text-align:center;padding:16px;border-radius:var(--radius)">
           <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Ganhos hoje</div>
           <div style="font-size:24px;font-weight:700;color:var(--green)">${Engine.fmt(totalIncome)}</div>
         </div>

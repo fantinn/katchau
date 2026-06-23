@@ -85,6 +85,7 @@ const Storage = (() => {
   // ── KEYS ────────────────────────────────────────
   const KEYS = {
     TRANSACTIONS: 'finara_txs',
+    DAILY:        'finara_daily',
     CATEGORIES:   'finara_cats',
     RULES:        'finara_rules',
     PREFS:        'finara_prefs',
@@ -138,6 +139,27 @@ const Storage = (() => {
     saveTransactions(getTransactions().filter(t => t.id !== id));
   };
 
+  // ── Daily Transactions (separadas das principais) ──
+  const getDailyTransactions = () => _get(KEYS.DAILY) || [];
+  const saveDailyTransactions = (txs) => _set(KEYS.DAILY, txs);
+
+  const addDailyTransaction = (tx) => {
+    const existing = getDailyTransactions();
+    const newTxs = [{ ...tx, id: Date.now().toString(), date: new Date().toISOString().split('T')[0] }, ...existing];
+    saveDailyTransactions(newTxs);
+    return tx;
+  };
+
+  const updateDailyTransaction = (id, patch) => {
+    const txs = getDailyTransactions().map(t => t.id === id ? { ...t, ...patch } : t);
+    saveDailyTransactions(txs);
+  };
+
+  const deleteDailyTransaction = (id) => {
+    saveDailyTransactions(getDailyTransactions().filter(t => t.id !== id));
+  };
+
+  // ── 
   // ── Category rules (learning) ───────────────────
   const getRules = () => _get(KEYS.RULES) || {};
   const saveRule = (keyword, category) => {
@@ -192,6 +214,8 @@ const Storage = (() => {
     setDatabase, getDatabase,
     getTransactions, saveTransactions, addTransactions,
     updateTransaction, updateTransactionsBulk, deleteTransaction,
+    getDailyTransactions, saveDailyTransactions, addDailyTransaction,
+    updateDailyTransaction, deleteDailyTransaction,
     getRules, saveRule, learnFromTransactions,
     getPrefs, savePref, getSettings, saveSettings,
     getCategories, saveCategories,

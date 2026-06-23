@@ -3,6 +3,7 @@ const App = (() => {
   const views = {
     dashboard: Dashboard,
     transactions: Transactions,
+    daily: Daily,
     import: Import,
     analytics: Analytics,
     schedule: Schedule,

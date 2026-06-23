@@ -144,6 +144,9 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Layout ───────────────────────────────────────── */
 #main { min-height: 100dvh; display: flex; flex-direction: column; }
+@media (min-width: 768px) {
+  #main { max-width: 480px; margin: 0 auto; }
+}
 #views { flex: 1; overflow: hidden; }
 .view { display: none; height: calc(100dvh - var(--nav-h) - var(--safe-bottom)); overflow-y: auto; padding-bottom: 24px; }
 .view.active { display: block; }

@@ -175,7 +175,12 @@ const Engine = (() => {
       // Parse amount (Brazilian: 1.234,56 or standard: 1234.56)
       // Preserve sign: negative = income (payment received), positive = expense
       const isNegative = rawAmt.includes('-');
-      let amount = parseFloat(rawAmt.replace(/-/g, '').replace(/\./g, '').replace(',', '.'));
+      let amount = parseFloat(
+        String(rawAmt)
+          .replace(/[R$\s-]/g, '')
+          .replace(/\./g, '')
+          .replace(',', '.')
+      );
       if (isNaN(amount)) continue;
 
       // Nubank credit card: positive = expense (we negate for convention)

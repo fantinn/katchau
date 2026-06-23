@@ -15,37 +15,49 @@ const Daily = (() => {
     const totalIncome = todayTxs.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
 
     container.innerHTML = `
-      <div class="page-header">
-        <div>
-          <div class="page-title">Diário</div>
-          <div class="page-subtitle">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+      <div style="padding: 0 20px">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Diário</div>
+            <div class="page-subtitle">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+          </div>
+          <button onclick="Daily._showAddModal()" style="padding:12px;border-radius:12px;background:var(--primary);color:#fff">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
-        <button onclick="Daily._showAddModal()" style="padding:12px;border-radius:12px;background:var(--primary);color:#fff">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
-      </div>
 
-      <!-- Summary cards -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-        <div class="summary-card" style="background:rgba(239,68,68,.1);text-align:center;padding:16px;border-radius:var(--radius)">
-          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Gastos hoje</div>
-          <div style="font-size:24px;font-weight:700;color:var(--red)">${Engine.fmt(Math.abs(totalExpense))}</div>
+        <!-- Summary cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div class="summary-card" style="background:rgba(239,68,68,.1);text-align:center;padding:16px;border-radius:var(--radius)">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Gastos hoje</div>
+            <div style="font-size:24px;font-weight:700;color:var(--red)">${Engine.fmt(Math.abs(totalExpense))}</div>
+          </div>
+          <div class="summary-card" style="background:rgba(34,197,94,.1);text-align:center;padding:16px;border-radius:var(--radius)">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Ganhos hoje</div>
+            <div style="font-size:24px;font-weight:700;color:var(--green)">${Engine.fmt(totalIncome)}</div>
+          </div>
         </div>
-        <div class="summary-card" style="background:rgba(34,197,94,.1);text-align:center;padding:16px;border-radius:var(--radius)">
-          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Ganhos hoje</div>
-          <div style="font-size:24px;font-weight:700;color:var(--green)">${Engine.fmt(totalIncome)}</div>
+
+        <!-- Weekly chart -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px">Histórico semanal</div>
+          <div style="background:var(--surface);border-radius:var(--radius);padding:16px;border:1px solid var(--border-light)">
+            <canvas id="weeklyChart" height="200"></canvas>
+          </div>
         </div>
-      </div>
 
-      <!-- Today's transactions -->
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px">Hoje</div>
-      <div class="tx-list">
-        ${todayTxs.length ? todayTxs.map(t => renderTxItem(t)).join('') : '<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-title">Nenhum registro hoje</div><div class="empty-sub">Adicione gastos ou ganhos do dia.</div></div>'}
-      </div>
+        <!-- Today's transactions -->
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Hoje</div>
+        <div class="tx-list">
+          ${todayTxs.length ? todayTxs.map(t => renderTxItem(t)).join('') : '<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-title">Nenhum registro hoje</div><div class="empty-sub">Adicione gastos ou ganhos do dia.</div></div>'}
+        </div>
 
-      <!-- Previous days -->
-      ${renderPreviousDays()}
+        <!-- Previous days -->
+        ${renderPreviousDays()}
+      </div>
     `;
+
+    renderWeeklyChart();
 
     container.addEventListener('click', (e) => {
       const item = e.target.closest('.tx-item');
@@ -55,10 +67,88 @@ const Daily = (() => {
     });
   };
 
+  const renderWeeklyChart = () => {
+    const canvas = document.getElementById('weeklyChart');
+    if (!canvas) return;
+
+    // Get last 7 days
+    const days = [];
+    const labels = [];
+    const incomeData = [];
+    const expenseData = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      days.push(dateStr);
+      labels.push(date.toLocaleDateString('pt-BR', { weekday: 'short' }));
+
+      const dayTxs = allTxs.filter(t => t.date === dateStr);
+      const income = dayTxs.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+      const expense = dayTxs.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+      incomeData.push(income);
+      expenseData.push(expense);
+    }
+
+    // Destroy existing chart if any
+    if (window.weeklyChartInstance) {
+      window.weeklyChartInstance.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    window.weeklyChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Ganhos',
+            data: incomeData,
+            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+            borderRadius: 6,
+          },
+          {
+            label: 'Gastos',
+            data: expenseData,
+            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+            borderRadius: 6,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              padding: 10,
+              font: { size: 11 }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 10 } }
+          },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            ticks: { font: { size: 10 } }
+          }
+        }
+      }
+    });
+  };
+
   const renderPreviousDays = () => {
     const today = new Date().toISOString().split('T')[0];
     const previousTxs = allTxs.filter(t => t.date !== today);
-    
+
     if (!previousTxs.length) return '';
 
     const groups = {};

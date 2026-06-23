@@ -12,6 +12,13 @@ const firebaseConfig = {
 
 // Inicializar Firebase
 if (typeof firebase !== 'undefined') {
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
+  try {
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    console.log('[Firebase] Inicializado com sucesso');
+  } catch (error) {
+    console.error('[Firebase] Erro na inicialização:', error);
+  }
+} else {
+  console.error('[Firebase] SDK não carregado');
 }

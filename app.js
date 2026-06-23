@@ -16,8 +16,13 @@ const App = (() => {
 
     if (savedDb) {
       Storage.setDatabase(savedDb);
-      await Storage.init(); // ← carrega dados do cloud antes de renderizar
-      showApp();
+      try {
+        await Storage.init(); // ← carrega dados do cloud antes de renderizar
+        showApp();
+      } catch (error) {
+        console.error('[App] Erro no Storage.init:', error);
+        showApp(); // mostra o app mesmo com erro no Firebase
+      }
     } else {
       showDbSelect();
     }

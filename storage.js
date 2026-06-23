@@ -59,16 +59,24 @@ const Storage = (() => {
   // ── Sync: carrega Firebase → localStorage ───────
   // Chamado uma vez no init. Resolve quando os dados estão prontos.
   const syncFromCloud = async () => {
-    if (!_firebaseAvailable()) return;
-    const keys = Object.values(KEYS);
-    await Promise.all(keys.map(async (k) => {
-      const val = await _firebaseGet(k);
-      if (val !== null) {
-        try {
-          localStorage.setItem(prefixedKey(k), JSON.stringify(val));
-        } catch {}
-      }
-    }));
+    if (!_firebaseAvailable()) {
+      console.warn('[Storage] Firebase não disponível, usando apenas localStorage');
+      return;
+    }
+    try {
+      const keys = Object.values(KEYS);
+      await Promise.all(keys.map(async (k) => {
+        const val = await _firebaseGet(k);
+        if (val !== null) {
+          try {
+            localStorage.setItem(prefixedKey(k), JSON.stringify(val));
+          } catch {}
+        }
+      }));
+      console.log('[Storage] Sync do Firebase concluído');
+    } catch (error) {
+      console.error('[Storage] Erro no sync do Firebase:', error);
+    }
   };
 
   // ── Prefixed key para localStorage (cache) ──────

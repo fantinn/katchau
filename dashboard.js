@@ -97,7 +97,7 @@ const Dashboard = (() => {
     container.innerHTML = `
       <div style="padding-bottom: 24px">
         <!-- Dashboard tab selector -->
-        <div style="margin:0 20px 16px">
+        <div class="dashboard-tabs-container">
           <div style="display:flex;gap:8px;background:var(--surface2);padding:4px;border-radius:12px">
             <button class="dashboard-tab-btn ${dashboardTab === 'credit' ? 'active' : ''}" onclick="Dashboard._setTab('credit')">
               💳 Cartão de Crédito

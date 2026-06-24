@@ -8,6 +8,8 @@ const Categories = (() => {
     { id: 'health',   name: 'Saúde',       emoji: '❤️', color: '#EF4444', bg: '#FEF2F2' },
     { id: 'shopping', name: 'Compras',     emoji: '🛍️', color: '#EC4899', bg: '#FDF2F8' },
     { id: 'subs',     name: 'Assinaturas', emoji: '📱', color: '#6366F1', bg: '#EEF2FF' },
+    { id: 'transfer', name: 'Transferências', emoji: '💸', color: '#F97316', bg: '#FFF7ED' },
+    { id: 'invest',   name: 'Investimentos', emoji: '📈', color: '#0891B2', bg: '#ECFEFF' },
     { id: 'others',   name: 'Outros',      emoji: '📦', color: '#94A3B8', bg: '#F8FAFC' },
   ];
 
@@ -48,6 +50,12 @@ const Categories = (() => {
     'mercadolivre': 'Compras', 'shopee': 'Compras', 'aliexpress': 'Compras',
     'shein': 'Compras', 'renner': 'Compras', 'riachuelo': 'Compras',
     'zara': 'Compras', 'hm': 'Compras', 'lojas': 'Compras',
+
+    'pix': 'Transferências', 'transferência': 'Transferências', 'transferencia': 'Transferências',
+    'aplicação': 'Investimentos', 'aplicacao': 'Investimentos', 'rdb': 'Investimentos',
+    'resgate': 'Investimentos', 'cdb': 'Investimentos', 'cdi': 'Investimentos',
+    'caixinha': 'Investimentos', 'poupança': 'Investimentos', 'poupanca': 'Investimentos',
+    'rendimento': 'Investimentos', 'juros': 'Investimentos',
   };
 
   const getAll = () => {

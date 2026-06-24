@@ -1,6 +1,7 @@
 // ── Dashboard Component ────────────────────────────
 const Dashboard = (() => {
   let currentMonth = null;
+  let dashboardTab = 'credit'; // 'credit' = cartão de crédito, 'account' = conta/transações
 
   const init = (container) => {
     const txs = Storage.getTransactions();
@@ -34,13 +35,60 @@ const Dashboard = (() => {
       </div>`;
   };
 
+  const renderEmptyForTab = (container) => {
+    const tabName = dashboardTab === 'credit' ? 'Cartão de Crédito' : 'Conta/Transações';
+    container.innerHTML = `
+      <div class="page-header">
+        <div><div class="page-title">Dashboard</div></div>
+      </div>
+      <div class="empty-state fade-in">
+        <div class="empty-icon">📊</div>
+        <div class="empty-title">Nenhum dado de ${tabName}</div>
+        <div class="empty-sub">Importe um CSV de ${tabName.toLowerCase()} para visualizar os dados.</div>
+        <button class="btn btn-primary btn-sm" onclick="App.navigate('import')" style="margin-top:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Importar CSV
+        </button>
+      </div>`;
+  };
+
   const render = (container, txs, months) => {
-    const stats = Engine.computeStats(txs, currentMonth);
-    const prevMonthKey = months[months.indexOf(currentMonth) + 1];
-    const prevStats = prevMonthKey ? Engine.computeStats(txs, prevMonthKey) : null;
-    const comparison = prevStats ? Engine.computeMonthComparison(txs, currentMonth, prevMonthKey) : null;
+    // Filter transactions by source based on dashboard tab
+    const filteredTxs = dashboardTab === 'credit' 
+      ? txs.filter(t => t.source === 'credit' || !t.source)
+      : txs.filter(t => t.source === 'account');
+    
+    const filteredMonths = Engine.getAvailableMonths(filteredTxs);
+    
+    // Auto-switch tab if no data in current tab but data exists in other tab
+    if (!filteredMonths.length) {
+      const otherTabTxs = dashboardTab === 'credit' 
+        ? txs.filter(t => t.source === 'account')
+        : txs.filter(t => t.source === 'credit' || !t.source);
+      const otherTabMonths = Engine.getAvailableMonths(otherTabTxs);
+      
+      if (otherTabMonths.length) {
+        dashboardTab = dashboardTab === 'credit' ? 'account' : 'credit';
+        render(container, txs, months);
+        return;
+      }
+      
+      renderEmptyForTab(container);
+      return;
+    }
+
+    if (!currentMonth || !filteredMonths.includes(currentMonth)) {
+      currentMonth = filteredMonths[0];
+    }
+
+    const stats = Engine.computeStats(filteredTxs, currentMonth);
+    const prevMonthKey = filteredMonths[filteredMonths.indexOf(currentMonth) + 1];
+    const prevStats = prevMonthKey ? Engine.computeStats(filteredTxs, prevMonthKey) : null;
+    const comparison = prevStats ? Engine.computeMonthComparison(filteredTxs, currentMonth, prevMonthKey) : null;
     const insights = Engine.generateInsights(stats, prevStats, Engine.getMonthLabel(currentMonth));
-    const evolution = Engine.getMonthlyEvolution(txs);
+    const evolution = Engine.getMonthlyEvolution(filteredTxs);
+    const cashFlow = Engine.computeAccountCashFlow(txs, currentMonth);
+    const currentBalance = Engine.computeAccountBalance(txs);
 
     const diffBadge = comparison
       ? `<span class="hero-badge">${comparison.diff > 0 ? '↑' : '↓'} ${Math.abs(comparison.diff).toFixed(0)}% vs mês anterior</span>`
@@ -48,6 +96,18 @@ const Dashboard = (() => {
 
     container.innerHTML = `
       <div style="padding-bottom: 24px">
+        <!-- Dashboard tab selector -->
+        <div style="margin:0 20px 16px">
+          <div style="display:flex;gap:8px;background:var(--surface2);padding:4px;border-radius:12px">
+            <button class="dashboard-tab-btn ${dashboardTab === 'credit' ? 'active' : ''}" onclick="Dashboard._setTab('credit')">
+              💳 Cartão de Crédito
+            </button>
+            <button class="dashboard-tab-btn ${dashboardTab === 'account' ? 'active' : ''}" onclick="Dashboard._setTab('account')">
+              📄 Conta/Transações
+            </button>
+          </div>
+        </div>
+
         <!-- Month picker -->
         <div class="month-picker">
           <button class="month-btn" id="prevMonthBtn">
@@ -61,10 +121,10 @@ const Dashboard = (() => {
 
         <!-- Hero card -->
         <div class="hero-card fade-in">
-          <div class="hero-month">Total gasto em ${Engine.getMonthLabel(currentMonth)}</div>
-          <div class="hero-amount">${Engine.fmt(stats.total)}</div>
-          <div class="hero-sub">${stats.count} transações · ${Engine.fmtShort(stats.avgDay)}/dia</div>
-          ${diffBadge}
+          <div class="hero-month">${dashboardTab === 'account' ? 'Saldo atual da conta' : `Total gasto em ${Engine.getMonthLabel(currentMonth)}`}</div>
+          <div class="hero-amount">${dashboardTab === 'account' ? Engine.fmt(currentBalance) : Engine.fmt(stats.total)}</div>
+          <div class="hero-sub">${dashboardTab === 'account' ? `${stats.count} transações no período` : `${stats.count} transações · ${Engine.fmtShort(stats.avgDay)}/dia`}</div>
+          ${dashboardTab === 'credit' ? diffBadge : ''}
         </div>
 
         <!-- Metrics -->
@@ -74,6 +134,42 @@ const Dashboard = (() => {
           ${renderMetric('Nº de compras', stats.count, '🧾', '#ECFDF5', '')}
           ${renderMetric('Média por dia', Engine.fmtShort(stats.avgDay), '📅', '#FFFBEB', '')}
         </div>
+
+        <!-- Account Cash Flow (only if has account transactions) -->
+        ${cashFlow.totalIn > 0 || cashFlow.totalOut > 0 ? `
+        <div class="section-head" style="margin-top:16px">
+          <div class="section-title">Fluxo da Conta</div>
+        </div>
+        <div class="card card-pad" style="background:linear-gradient(135deg,#0891B2 0%,#06B6D4 100%);color:#fff">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div>
+              <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Entradas</div>
+              <div style="font-size:18px;font-weight:700">${Engine.fmt(cashFlow.totalIn)}</div>
+              <div style="font-size:11px;opacity:0.7">Pix: ${Engine.fmtShort(cashFlow.pixReceived)} · Transf: ${Engine.fmtShort(cashFlow.transferReceived)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Saídas</div>
+              <div style="font-size:18px;font-weight:700">${Engine.fmt(cashFlow.totalOut)}</div>
+              <div style="font-size:11px;opacity:0.7">Pix: ${Engine.fmtShort(cashFlow.pixSent)} · Transf: ${Engine.fmtShort(cashFlow.transferSent)}</div>
+            </div>
+          </div>
+          <div style="padding-top:12px;border-top:1px solid rgba(255,255,255,0.2);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:11px;opacity:0.8">Saldo do mês</div>
+              <div style="font-size:20px;font-weight:700">${cashFlow.netBalance >= 0 ? '+' : ''}${Engine.fmt(cashFlow.netBalance)}</div>
+            </div>
+            ${cashFlow.investmentIn > 0 || cashFlow.investmentOut > 0 ? `
+            <div style="text-align:right">
+              <div style="font-size:11px;opacity:0.8">Investimentos</div>
+              <div style="font-size:14px;font-weight:600">
+                ${Engine.fmt(Math.abs(cashFlow.investmentNet))}
+                <span style="font-size:11px;font-weight:400;opacity:0.7">(${cashFlow.investmentNet > 0 ? 'lucro' : 'aplicado'})</span>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        ` : ''}
 
         <!-- Insights -->
         <div class="section-head">
@@ -164,12 +260,12 @@ const Dashboard = (() => {
 
     // Bind month nav
     document.getElementById('prevMonthBtn').onclick = () => {
-      const idx = months.indexOf(currentMonth);
-      if (idx < months.length - 1) { currentMonth = months[idx+1]; render(container, txs, months); }
+      const idx = filteredMonths.indexOf(currentMonth);
+      if (idx < filteredMonths.length - 1) { currentMonth = filteredMonths[idx+1]; render(container, txs, months); }
     };
     document.getElementById('nextMonthBtn').onclick = () => {
-      const idx = months.indexOf(currentMonth);
-      if (idx > 0) { currentMonth = months[idx-1]; render(container, txs, months); }
+      const idx = filteredMonths.indexOf(currentMonth);
+      if (idx > 0) { currentMonth = filteredMonths[idx-1]; render(container, txs, months); }
     };
 
     // Render charts
@@ -251,5 +347,12 @@ const Dashboard = (() => {
     return cells;
   };
 
-  return { init };
+  const _setTab = (tab) => {
+    dashboardTab = tab;
+    currentMonth = null; // Reset month when switching tabs
+    const container = document.getElementById('view-dashboard');
+    init(container);
+  };
+
+  return { init, _setTab };
 })();

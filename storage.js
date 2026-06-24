@@ -162,9 +162,11 @@ const Storage = (() => {
   // ── 
   // ── Category rules (learning) ───────────────────
   const getRules = () => _get(KEYS.RULES) || {};
+  const sanitizeKey = (key) => key.replace(/[.#$\[\]\/]/g, '_');
+
   const saveRule = (keyword, category) => {
     const rules = getRules();
-    rules[keyword.toLowerCase()] = category;
+    rules[sanitizeKey(keyword.toLowerCase())] = category;
     _set(KEYS.RULES, rules);
   };
   const learnFromTransactions = (txs) => {
@@ -172,7 +174,7 @@ const Storage = (() => {
     txs.forEach(t => {
       if (t.category && t.category !== 'Outros') {
         const words = t.description.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-        words.forEach(w => { if (!rules[w]) rules[w] = t.category; });
+        words.forEach(w => { if (!rules[sanitizeKey(w)]) rules[sanitizeKey(w)] = t.category; });
       }
     });
     _set(KEYS.RULES, rules);

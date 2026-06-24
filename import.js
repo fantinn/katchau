@@ -2,10 +2,12 @@
 const Import = (() => {
   let parsedTxs = [];
   let step = 1; // 1: upload, 2: preview, 3: done
+  let importType = 'credit'; // 'credit' = cartão de crédito, 'transactions' = conta corrente
 
   const init = (container) => {
     parsedTxs = [];
     step = 1;
+    importType = 'credit';
     render(container);
   };
 
@@ -45,6 +47,19 @@ const Import = (() => {
   };
 
   const renderStep1 = () => `
+    <!-- Type selector -->
+    <div style="margin:0 20px 16px">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px">Tipo de importação:</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ${importType === 'credit' ? 'btn-primary' : 'btn-secondary'}" style="flex:1" onclick="Import._setType('credit')">
+          💳 Cartão de Crédito
+        </button>
+        <button class="btn ${importType === 'transactions' ? 'btn-primary' : 'btn-secondary'}" style="flex:1" onclick="Import._setType('transactions')">
+          📄 Transações (Conta)
+        </button>
+      </div>
+    </div>
+
     <!-- Drop zone -->
     <div class="import-zone" id="dropZone">
       <input type="file" id="csvFile" accept=".csv,text/csv" />
@@ -61,9 +76,20 @@ const Import = (() => {
 
     <!-- Tips -->
     <div style="margin:0 20px">
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px">Como exportar do Nubank:</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px">
+        ${importType === 'credit' ? 'Como exportar Cartão de Crédito:' : 'Como exportar Transações:'}
+      </div>
       <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm);border:1px solid var(--border-light)">
-        ${['Abra o app Nubank', 'Vá em Cartão de Crédito → Fatura', 'Toque em "Exportar PDF" (baixe o CSV)', 'Ou acesse nubank.com.br → Transações → Exportar'].map((s,i) => `
+        ${importType === 'credit' ? [
+          'Abra o app Nubank',
+          'Vá em Cartão de Crédito → Fatura',
+          'Toque em "Exportar PDF" (baixe o CSV)'
+        ] : [
+          'Abra o app Nubank',
+          'Vá em Conta → Transações',
+          'Toque em "Exportar" → "CSV"',
+          'Ou acesse nubank.com.br → Transações → Exportar'
+        ].map((s,i) => `
           <div style="display:flex;gap:12px;${i>0?'margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light)':''}">
             <div style="width:22px;height:22px;border-radius:50%;background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
             <div style="font-size:13px;color:var(--text2)">${s}</div>
@@ -176,7 +202,9 @@ const Import = (() => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target.result;
-      const txs = Engine.parseNubankCSV(text);
+      const txs = importType === 'credit' 
+        ? Engine.parseNubankCSV(text)
+        : Engine.parseAutoCSV(text);
 
       if (!txs || txs.length === 0) {
         App.toast('Nenhuma transação encontrada no CSV', 'error');
@@ -202,6 +230,13 @@ const Import = (() => {
   const _reset = () => {
     parsedTxs = [];
     step = 1;
+    importType = 'credit';
+    const container = document.getElementById('view-import');
+    render(container);
+  };
+
+  const _setType = (type) => {
+    importType = type;
     const container = document.getElementById('view-import');
     render(container);
   };
@@ -253,5 +288,5 @@ ${fmt(28)},Academia Smart Fit,99.00`;
     }
   };
 
-  return { init, _confirmImport, _reset, _loadSample };
+  return { init, _confirmImport, _reset, _loadSample, _setType };
 })();

@@ -608,6 +608,58 @@ const Engine = (() => {
     return accountTxs.reduce((s, t) => s + t.amount, 0);
   };
 
+  // Debug function to find which transaction caused negative balance
+  const debugNegativeBalance = () => {
+    const txs = Storage.getTransactions();
+    const accountTxs = txs.filter(t => t.source === 'account').sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    console.log('=== DEBUG: Análise de Saldo Negativo ===');
+    console.log('Total de transações de conta:', accountTxs.length);
+    
+    let balance = 0;
+    let negativePoint = null;
+    
+    for (let i = 0; i < accountTxs.length; i++) {
+      const tx = accountTxs[i];
+      const prevBalance = balance;
+      balance += tx.amount;
+      
+      if (balance < 0 && prevBalance >= 0 && !negativePoint) {
+        negativePoint = {
+          index: i,
+          tx: tx,
+          prevBalance: prevBalance,
+          newBalance: balance,
+          date: tx.date,
+          description: tx.description,
+          amount: tx.amount
+        };
+      }
+    }
+    
+    console.log('Saldo final:', balance);
+    
+    if (negativePoint) {
+      console.log('=== TRANSACÃO QUE CAUSOU SALDO NEGATIVO ===');
+      console.log('Data:', negativePoint.date);
+      console.log('Descrição:', negativePoint.description);
+      console.log('Valor:', negativePoint.amount);
+      console.log('Saldo antes:', negativePoint.prevBalance);
+      console.log('Saldo depois:', negativePoint.newBalance);
+      console.log('Índice:', negativePoint.index, 'de', accountTxs.length);
+    } else {
+      console.log('Nenhuma transação causou saldo negativo (saldo já estava negativo ou nunca ficou negativo)');
+    }
+    
+    // Show last 10 transactions
+    console.log('=== ÚLTIMAS 10 TRANSAÇÕES ===');
+    accountTxs.slice(-10).forEach((tx, i) => {
+      console.log(`${i+1}. ${tx.date} - ${tx.description} - ${tx.amount}`);
+    });
+    
+    return negativePoint;
+  };
+
   return {
     fmt, fmtShort,
     getMonthKey, getMonthLabel, getAvailableMonths,
@@ -615,5 +667,6 @@ const Engine = (() => {
     generateInsights, getMonthlyEvolution,
     parseNubankCSV, parseNubankTransactionsCSV, parseInterCSV, parseBradescoCSV, parseAutoCSV, parseCSVLine,
     computeAccountCashFlow, computeAccountBalance,
+    debugNegativeBalance,
   };
 })();

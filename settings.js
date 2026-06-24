@@ -71,7 +71,7 @@ const Settings = (() => {
           <div class="settings-item">
             <div class="settings-item-left">
               <div class="settings-icon" style="background:var(--blue-light)">💙</div>
-              <div><div class="settings-label">Finara</div><div class="settings-sub">v1.0 · Controle financeiro pessoal</div></div>
+              <div><div class="settings-label">Tinpay</div><div class="settings-sub">v1.0 · Controle financeiro pessoal</div></div>
             </div>
           </div>
         </div>

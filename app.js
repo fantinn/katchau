@@ -3,6 +3,7 @@ const App = (() => {
   const views = {
     dashboard: Dashboard,
     budget: Budget,
+    income: Income,
     transactions: Transactions,
     daily: Daily,
     import: Import,
@@ -153,3 +154,4 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+

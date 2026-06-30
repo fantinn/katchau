@@ -933,3 +933,114 @@ select.form-input { appearance: none; -webkit-appearance: none; }
   #toast-container { max-width: 480px; width: 100%; left: 50%; transform: translateX(-50%); }
   #modal-overlay { max-width: 480px; left: 50%; transform: translateX(-50%); }
 }
+
+/* -- Budget View ----------------------------------- */
+.budget-hero {
+  margin: 16px 20px 0;
+  background: linear-gradient(135deg, var(--blue) 0%, #3B82F6 60%, #60A5FA 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  color: #fff;
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(37,99,235,.3);
+}
+.budget-hero.negative {
+  background: linear-gradient(135deg, var(--red) 0%, #EF4444 60%, #F87171 100%);
+  box-shadow: 0 8px 32px rgba(239,68,68,.3);
+}
+.budget-hero-label { font-size: 12px; opacity: .75; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+.budget-hero-value { font-size: 38px; font-weight: 700; letter-spacing: -1.5px; margin: 6px 0 4px; }
+.budget-hero-sub { font-size: 13px; opacity: .8; }
+
+.budget-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.budget-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+}
+.budget-card-label { font-size: 11px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+.budget-card-value { font-size: 20px; font-weight: 700; letter-spacing: -.5px; margin-top: 3px; }
+.budget-card-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.budget-actions {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 0 20px 16px;
+}
+
+.budget-list {
+  padding: 0 20px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.budget-expense {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: transform var(--transition);
+}
+.budget-expense:active { transform: scale(.985); }
+.budget-date {
+  font-size: 13px; font-weight: 700; color: var(--blue);
+  background: var(--blue-light);
+  padding: 4px 8px; border-radius: 8px;
+  flex-shrink: 0;
+}
+.budget-expense-main { flex: 1; min-width: 0; }
+.budget-expense-name { font-size: 14px; font-weight: 600; }
+.budget-expense-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.budget-expense-amount { font-size: 15px; font-weight: 700; color: var(--red); }
+.budget-empty { margin-top: 0; }
+
+
+/* -- Income View ----------------------------------- */
+.income-hero {
+  margin: 16px 20px 24px;
+  background: linear-gradient(135deg, var(--green) 0%, #10B981 60%, #34D399 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  color: #fff;
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(16,185,129,.3);
+}
+.income-hero-label { font-size: 12px; opacity: .75; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+.income-hero-value { font-size: 38px; font-weight: 700; letter-spacing: -1.5px; margin: 6px 0 4px; }
+.income-hero-sub { font-size: 13px; opacity: .8; }
+
+.income-actions {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 0 20px 16px;
+}
+
+.income-list {
+  padding: 0 20px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.income-source {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: transform var(--transition);
+}
+.income-source:active { transform: scale(.985); }
+.income-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.income-source-main { flex: 1; min-width: 0; }
+.income-source-name { font-size: 14px; font-weight: 600; }
+.income-source-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.income-source-date { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.income-source-amount { font-size: 15px; font-weight: 700; color: var(--green); }
+.income-empty { margin-top: 0; }
+

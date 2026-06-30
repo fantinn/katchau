@@ -1,7 +1,6 @@
 // ── Dashboard Component ────────────────────────────
 const Dashboard = (() => {
   let currentMonth = null;
-  let dashboardTab = 'credit'; // 'credit' = cartão de crédito, 'account' = conta/transações
 
   const init = (container) => {
     const txs = Storage.getTransactions();
@@ -32,55 +31,13 @@ const Dashboard = (() => {
       </div>`;
   };
 
-  const renderEmptyForTab = (container) => {
-    const tabName = dashboardTab === 'credit' ? 'Cartão de Crédito' : 'Conta/Transações';
-    container.innerHTML = `
-      <div class="page-header">
-        <div><div class="page-title">Dashboard</div></div>
-      </div>
-      <div class="empty-state fade-in">
-        <div class="empty-icon">📊</div>
-        <div class="empty-title">Nenhum dado de ${tabName}</div>
-        <div class="empty-sub">Sem dados aqui ainda. Use Gastos para adicionar manualmente ou Config para importar CSV.</div>
-        <button class="btn btn-primary btn-sm" onclick="App.navigate('transactions')" style="margin-top:8px">Ir para Gastos</button>
-      </div>`;
-  };
-
   const render = (container, txs, months) => {
-    // Filter transactions by source based on dashboard tab
-    const filteredTxs = dashboardTab === 'credit' 
-      ? txs.filter(t => t.source === 'credit' || !t.source)
-      : txs.filter(t => t.source === 'account');
-    
-    const filteredMonths = Engine.getAvailableMonths(filteredTxs);
-    
-    // Auto-switch tab if no data in current tab but data exists in other tab
-    if (!filteredMonths.length) {
-      const otherTabTxs = dashboardTab === 'credit' 
-        ? txs.filter(t => t.source === 'account')
-        : txs.filter(t => t.source === 'credit' || !t.source);
-      const otherTabMonths = Engine.getAvailableMonths(otherTabTxs);
-      
-      if (otherTabMonths.length) {
-        dashboardTab = dashboardTab === 'credit' ? 'account' : 'credit';
-        render(container, txs, months);
-        return;
-      }
-      
-      renderEmptyForTab(container);
-      return;
-    }
-
-    if (!currentMonth || !filteredMonths.includes(currentMonth)) {
-      currentMonth = filteredMonths[0];
-    }
-
-    const stats = Engine.computeStats(filteredTxs, currentMonth);
-    const prevMonthKey = filteredMonths[filteredMonths.indexOf(currentMonth) + 1];
-    const prevStats = prevMonthKey ? Engine.computeStats(filteredTxs, prevMonthKey) : null;
-    const comparison = prevStats ? Engine.computeMonthComparison(filteredTxs, currentMonth, prevMonthKey) : null;
+    const stats = Engine.computeStats(txs, currentMonth);
+    const prevMonthKey = months[months.indexOf(currentMonth) + 1];
+    const prevStats = prevMonthKey ? Engine.computeStats(txs, prevMonthKey) : null;
+    const comparison = prevStats ? Engine.computeMonthComparison(txs, currentMonth, prevMonthKey) : null;
     const insights = Engine.generateInsights(stats, prevStats, Engine.getMonthLabel(currentMonth));
-    const evolution = Engine.getMonthlyEvolution(filteredTxs);
+    const evolution = Engine.getMonthlyEvolution(txs);
     const cashFlow = Engine.computeAccountCashFlow(txs, currentMonth);
     const currentBalance = Engine.computeAccountBalance(txs);
 
@@ -90,18 +47,6 @@ const Dashboard = (() => {
 
     container.innerHTML = `
       <div style="padding-bottom: 24px">
-        <!-- Dashboard tab selector -->
-        <div class="dashboard-tabs-container">
-          <div style="display:flex;gap:8px;background:var(--surface2);padding:4px;border-radius:12px">
-            <button class="dashboard-tab-btn ${dashboardTab === 'credit' ? 'active' : ''}" onclick="Dashboard._setTab('credit')">
-              💳 Cartão de Crédito
-            </button>
-            <button class="dashboard-tab-btn ${dashboardTab === 'account' ? 'active' : ''}" onclick="Dashboard._setTab('account')">
-              📄 Conta/Transações
-            </button>
-          </div>
-        </div>
-
         <!-- Month picker -->
         <div class="month-picker">
           <button class="month-btn" id="prevMonthBtn">
@@ -115,10 +60,10 @@ const Dashboard = (() => {
 
         <!-- Hero card -->
         <div class="hero-card fade-in">
-          <div class="hero-month">${dashboardTab === 'account' ? 'Saldo atual da conta' : `Total gasto em ${Engine.getMonthLabel(currentMonth)}`}</div>
-          <div class="hero-amount">${dashboardTab === 'account' ? Engine.fmt(currentBalance) : Engine.fmt(stats.total)}</div>
-          <div class="hero-sub">${dashboardTab === 'account' ? `${stats.count} transações no período` : `${stats.count} transações · ${Engine.fmtShort(stats.avgDay)}/dia`}</div>
-          ${dashboardTab === 'credit' ? diffBadge : ''}
+          <div class="hero-month">Total gasto em ${Engine.getMonthLabel(currentMonth)}</div>
+          <div class="hero-amount">${Engine.fmt(stats.total)}</div>
+          <div class="hero-sub">${stats.count} transações · ${Engine.fmtShort(stats.avgDay)}/dia</div>
+          ${diffBadge}
         </div>
 
         <!-- Metrics -->
@@ -254,12 +199,12 @@ const Dashboard = (() => {
 
     // Bind month nav
     document.getElementById('prevMonthBtn').onclick = () => {
-      const idx = filteredMonths.indexOf(currentMonth);
-      if (idx < filteredMonths.length - 1) { currentMonth = filteredMonths[idx+1]; render(container, txs, months); }
+      const idx = months.indexOf(currentMonth);
+      if (idx < months.length - 1) { currentMonth = months[idx+1]; render(container, txs, months); }
     };
     document.getElementById('nextMonthBtn').onclick = () => {
-      const idx = filteredMonths.indexOf(currentMonth);
-      if (idx > 0) { currentMonth = filteredMonths[idx-1]; render(container, txs, months); }
+      const idx = months.indexOf(currentMonth);
+      if (idx > 0) { currentMonth = months[idx-1]; render(container, txs, months); }
     };
 
     // Render charts
@@ -341,12 +286,5 @@ const Dashboard = (() => {
     return cells;
   };
 
-  const _setTab = (tab) => {
-    dashboardTab = tab;
-    currentMonth = null; // Reset month when switching tabs
-    const container = document.getElementById('view-dashboard');
-    init(container);
-  };
-
-  return { init, _setTab };
+  return { init };
 })();

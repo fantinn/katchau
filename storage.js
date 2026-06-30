@@ -91,6 +91,7 @@ const Storage = (() => {
     PREFS:        'finara_prefs',
     META:         'finara_meta',
     BUDGET:       'finara_budget',
+    INCOME:       'finara_income',
   };
 
   // ── Cache read/write (síncrono) ─────────────────
@@ -223,6 +224,35 @@ const Storage = (() => {
     });
   };
 
+
+  // Entradas extras
+  const getIncome = () => _get(KEYS.INCOME) || { sources: [] };
+  const saveIncome = (income) => _set(KEYS.INCOME, income);
+
+  const addIncomeSource = (source) => {
+    const income = getIncome();
+    const sources = income.sources || [];
+    saveIncome({
+      ...income,
+      sources: [{ ...source, id: `income_${Date.now()}` }, ...sources],
+    });
+  };
+
+  const updateIncomeSource = (id, patch) => {
+    const income = getIncome();
+    saveIncome({
+      ...income,
+      sources: (income.sources || []).map(s => s.id === id ? { ...s, ...patch } : s),
+    });
+  };
+
+  const deleteIncomeSource = (id) => {
+    const income = getIncome();
+    saveIncome({
+      ...income,
+      sources: (income.sources || []).filter(s => s.id !== id),
+    });
+  };
   // ── Custom categories ───────────────────────────
   const getCategories = () => _get(KEYS.CATEGORIES) || null;
   const saveCategories = (cats) => _set(KEYS.CATEGORIES, cats);
@@ -256,9 +286,16 @@ const Storage = (() => {
     getRules, saveRule, learnFromTransactions,
     getPrefs, savePref, getSettings, saveSettings,
     getBudget, saveBudget, updateBudgetSettings,
-    addBudgetExpense, updateBudgetExpense, deleteBudgetExpense,
+    addBudgetExpense, updateBudgetExpense, deleteBudgetExpense, getIncome, saveIncome, addIncomeSource, updateIncomeSource, deleteIncomeSource,
     getCategories, saveCategories,
     exportCSV, clearAll,
     KEYS,
   };
 })();
+
+
+
+
+
+
+

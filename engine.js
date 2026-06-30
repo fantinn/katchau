@@ -583,7 +583,21 @@ const Engine = (() => {
     const investmentIn = accountTxs.filter(t => t.txSubtype === 'investment_in').reduce((s, t) => s + Math.abs(t.amount), 0);
     const investmentOut = accountTxs.filter(t => t.txSubtype === 'investment_out').reduce((s, t) => s + t.amount, 0);
     
-    const totalIn = pixReceived + transferReceived + investmentOut;
+    // Add extra income sources
+    const income = Storage.getIncome() || { sources: [] };
+    const incomeSources = income.sources || [];
+    let incomeTotal = 0;
+    
+    if (monthKey) {
+      // Filter income sources by month
+      incomeTotal = incomeSources
+        .filter(s => s.date && s.date.substring(0, 7) === monthKey)
+        .reduce((s, source) => s + (source.amount || 0), 0);
+    } else {
+      incomeTotal = incomeSources.reduce((s, source) => s + (source.amount || 0), 0);
+    }
+    
+    const totalIn = pixReceived + transferReceived + investmentOut + incomeTotal;
     const totalOut = pixSent + transferSent + investmentIn;
     const netBalance = totalIn - totalOut;
     const investmentNet = investmentOut - investmentIn; // Positive = gained, Negative = still invested
@@ -596,6 +610,7 @@ const Engine = (() => {
       investmentIn,
       investmentOut,
       investmentNet,
+      incomeTotal,
       totalIn,
       totalOut,
       netBalance
@@ -605,7 +620,13 @@ const Engine = (() => {
   // Calculate current account balance (all time)
   const computeAccountBalance = (txs) => {
     const accountTxs = txs.filter(t => t.source === 'account');
-    return accountTxs.reduce((s, t) => s + t.amount, 0);
+    const accountBalance = accountTxs.reduce((s, t) => s + t.amount, 0);
+    
+    // Add extra income sources
+    const income = Storage.getIncome() || { sources: [] };
+    const incomeTotal = (income.sources || []).reduce((s, source) => s + (source.amount || 0), 0);
+    
+    return accountBalance + incomeTotal;
   };
 
   // Debug function to find which transaction caused negative balance

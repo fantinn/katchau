@@ -2,6 +2,7 @@
 const App = (() => {
   const views = {
     dashboard: Dashboard,
+    budget: Budget,
     transactions: Transactions,
     daily: Daily,
     import: Import,

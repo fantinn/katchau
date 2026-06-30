@@ -55,6 +55,13 @@ const Settings = (() => {
               <div><div class="settings-label">Transações</div><div class="settings-sub">${txs.length} registros</div></div>
             </div>
           </div>
+          <div class="settings-item" onclick="Settings._openImport()" style="cursor:pointer">
+            <div class="settings-item-left">
+              <div class="settings-icon" style="background:var(--blue-light);color:var(--blue);font-size:12px;font-weight:700">CSV</div>
+              <div><div class="settings-label">Importar CSV</div><div class="settings-sub">Adicionar dados do cartão ou da conta</div></div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
           <div class="settings-item" onclick="Settings._clearData()" style="cursor:pointer">
             <div class="settings-item-left">
               <div class="settings-icon" style="background:var(--red-bg)">🗑️</div>
@@ -124,5 +131,7 @@ const Settings = (() => {
     location.reload();
   };
 
-  return { init, _toggleDark, _clearData, _confirmClear, _switchDb, _confirmSwitchDb };
+  const _openImport = () => App.navigate('import');
+
+  return { init, _toggleDark, _clearData, _confirmClear, _switchDb, _confirmSwitchDb, _openImport };
 })();

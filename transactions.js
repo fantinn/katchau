@@ -3,7 +3,7 @@ const Transactions = (() => {
   let allTxs = [];
   let filtered = [];
   let activeCategory = 'all';
-  let activeSource = 'credit';
+  let activeSource = 'account';
   let searchQuery = '';
   let selectedIds = new Set();
   let selectMode = false;

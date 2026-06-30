@@ -27,11 +27,8 @@ const Dashboard = (() => {
       <div class="empty-state fade-in">
         <div class="empty-icon">📊</div>
         <div class="empty-title">Nenhum dado ainda</div>
-        <div class="empty-sub">Importe seu CSV do Nubank para começar a visualizar seus gastos.</div>
-        <button class="btn btn-primary btn-sm" onclick="App.navigate('import')" style="margin-top:8px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Importar CSV
-        </button>
+        <div class="empty-sub">Comece adicionando um gasto em Conta. Importar CSV fica em Config.</div>
+        <button class="btn btn-primary btn-sm" onclick="App.navigate('transactions')" style="margin-top:8px">Adicionar gasto</button>
       </div>`;
   };
 
@@ -44,11 +41,8 @@ const Dashboard = (() => {
       <div class="empty-state fade-in">
         <div class="empty-icon">📊</div>
         <div class="empty-title">Nenhum dado de ${tabName}</div>
-        <div class="empty-sub">Importe um CSV de ${tabName.toLowerCase()} para visualizar os dados.</div>
-        <button class="btn btn-primary btn-sm" onclick="App.navigate('import')" style="margin-top:8px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Importar CSV
-        </button>
+        <div class="empty-sub">Sem dados aqui ainda. Use Gastos para adicionar manualmente ou Config para importar CSV.</div>
+        <button class="btn btn-primary btn-sm" onclick="App.navigate('transactions')" style="margin-top:8px">Ir para Gastos</button>
       </div>`;
   };
 

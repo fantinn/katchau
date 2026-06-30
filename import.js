@@ -18,6 +18,7 @@ const Import = (() => {
           <div class="page-title">Importar CSV</div>
           <div class="page-subtitle">Nubank e outros bancos</div>
         </div>
+        <button class="btn btn-secondary btn-sm" onclick="App.navigate('settings')">Config</button>
       </div>
 
       <!-- Steps indicator -->

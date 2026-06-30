@@ -90,6 +90,7 @@ const Storage = (() => {
     RULES:        'finara_rules',
     PREFS:        'finara_prefs',
     META:         'finara_meta',
+    BUDGET:       'finara_budget',
   };
 
   // ── Cache read/write (síncrono) ─────────────────
@@ -188,6 +189,40 @@ const Storage = (() => {
   const getSettings = () => getPrefs();
   const saveSettings = (obj) => _set(KEYS.PREFS, obj);
 
+  // Planejamento mensal de conta
+  const getBudget = () => _get(KEYS.BUDGET) || { salary: 0, salaryDay: 5, expenses: [] };
+  const saveBudget = (budget) => _set(KEYS.BUDGET, budget);
+
+  const updateBudgetSettings = (patch) => {
+    const budget = getBudget();
+    saveBudget({ ...budget, ...patch });
+  };
+
+  const addBudgetExpense = (expense) => {
+    const budget = getBudget();
+    const expenses = budget.expenses || [];
+    saveBudget({
+      ...budget,
+      expenses: [{ ...expense, id: `budget_${Date.now()}` }, ...expenses],
+    });
+  };
+
+  const updateBudgetExpense = (id, patch) => {
+    const budget = getBudget();
+    saveBudget({
+      ...budget,
+      expenses: (budget.expenses || []).map(e => e.id === id ? { ...e, ...patch } : e),
+    });
+  };
+
+  const deleteBudgetExpense = (id) => {
+    const budget = getBudget();
+    saveBudget({
+      ...budget,
+      expenses: (budget.expenses || []).filter(e => e.id !== id),
+    });
+  };
+
   // ── Custom categories ───────────────────────────
   const getCategories = () => _get(KEYS.CATEGORIES) || null;
   const saveCategories = (cats) => _set(KEYS.CATEGORIES, cats);
@@ -220,6 +255,8 @@ const Storage = (() => {
     updateDailyTransaction, deleteDailyTransaction,
     getRules, saveRule, learnFromTransactions,
     getPrefs, savePref, getSettings, saveSettings,
+    getBudget, saveBudget, updateBudgetSettings,
+    addBudgetExpense, updateBudgetExpense, deleteBudgetExpense,
     getCategories, saveCategories,
     exportCSV, clearAll,
     KEYS,

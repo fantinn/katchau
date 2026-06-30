@@ -3,6 +3,7 @@ const Transactions = (() => {
   let allTxs = [];
   let filtered = [];
   let activeCategory = 'all';
+  let activeSource = 'credit';
   let searchQuery = '';
   let selectedIds = new Set();
   let selectMode = false;
@@ -17,10 +18,12 @@ const Transactions = (() => {
 
   const render = (container) => {
     applyFilters();
-    const months = Engine.getAvailableMonths(allTxs);
     const allCats = Categories.getAll().map(c => c.name);
     // Garantir que "Outros" esteja sempre nos filtros
     const cats = ['all', ...allCats.filter(c => c !== 'Outros').slice(0, 7), 'Outros'];
+    const sourceTxs = allTxs.filter(t => (t.source || 'credit') === activeSource);
+    const creditCount = allTxs.filter(t => (t.source || 'credit') === 'credit').length;
+    const accountCount = allTxs.filter(t => t.source === 'account').length;
 
     container.innerHTML = `
       <div class="page-header">
@@ -37,6 +40,17 @@ const Transactions = (() => {
           </button>
         </div>
       </div>
+
+      <div class="tx-source-tabs">
+        <button class="tx-source-tab ${activeSource === 'credit' ? 'active' : ''}" data-source="credit">
+          Cr&eacute;dito <span>${creditCount}</span>
+        </button>
+        <button class="tx-source-tab ${activeSource === 'account' ? 'active' : ''}" data-source="account">
+          Conta <span>${accountCount}</span>
+        </button>
+      </div>
+
+      ${activeSource === 'account' ? renderAccountExpenseForm() : ''}
 
       <!-- Search -->
       <div class="search-bar">
@@ -68,6 +82,27 @@ const Transactions = (() => {
     `;
 
     // Events
+    const subtitle = container.querySelector('.page-subtitle');
+    if (subtitle) subtitle.textContent = `${sourceTxs.length} transacoes em ${activeSource === 'account' ? 'conta' : 'credito'}`;
+
+    document.querySelectorAll('.tx-source-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeSource = btn.dataset.source;
+        activeCategory = 'all';
+        selectedIds.clear();
+        selectMode = false;
+        render(container);
+      });
+    });
+
+    const accountForm = document.getElementById('accountExpenseForm');
+    if (accountForm) {
+      accountForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addAccountExpense();
+      });
+    }
+
     document.getElementById('txSearch').addEventListener('input', (e) => {
       searchQuery = e.target.value;
       applyFilters();
@@ -107,10 +142,96 @@ const Transactions = (() => {
 
   const applyFilters = () => {
     filtered = allTxs.filter(t => {
+      const sourceMatch = (t.source || 'credit') === activeSource;
       const catMatch = activeCategory === 'all' || t.category === activeCategory;
-      const searchMatch = !searchQuery || t.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return catMatch && searchMatch;
+      const searchMatch = !searchQuery || (t.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+      return sourceMatch && catMatch && searchMatch;
     });
+  };
+
+  const renderAccountExpenseForm = () => {
+    const cats = Categories.getAll();
+    return `
+      <form class="account-expense-form" id="accountExpenseForm">
+        <div class="account-form-head">
+          <div>
+            <div class="account-form-title">Gasto de conta</div>
+            <div class="account-form-sub">D&eacute;bito, Pix ou dinheiro, separado do cr&eacute;dito.</div>
+          </div>
+        </div>
+        <div class="account-form-grid">
+          <div class="form-group">
+            <label class="form-label">Valor</label>
+            <input class="form-input" id="accountExpenseAmount" inputmode="decimal" placeholder="0,00" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Forma</label>
+            <select class="form-input" id="accountExpenseMethod">
+              <option value="debit_card">D&eacute;bito</option>
+              <option value="pix_sent">Pix</option>
+              <option value="cash">Dinheiro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nome opcional</label>
+            <input class="form-input" id="accountExpenseDesc" placeholder="Ex: padaria" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoria opcional</label>
+            <select class="form-input" id="accountExpenseCat">
+              <option value="">Sugerir automaticamente</option>
+              ${cats.map(c => `<option value="${c.name}">${c.emoji} ${c.name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" type="submit">Adicionar gasto</button>
+      </form>
+    `;
+  };
+
+  const parseMoney = (value) => {
+    const normalized = String(value || '').replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+    const amount = parseFloat(normalized);
+    return Number.isFinite(amount) ? amount : 0;
+  };
+
+  const paymentLabels = {
+    debit_card: 'Debito',
+    pix_sent: 'Pix',
+    cash: 'Dinheiro',
+  };
+
+  const addAccountExpense = () => {
+    const amount = parseMoney(document.getElementById('accountExpenseAmount').value);
+    if (amount <= 0) {
+      App.toast('Informe um valor valido', 'error');
+      return;
+    }
+
+    const method = document.getElementById('accountExpenseMethod').value;
+    const descInput = document.getElementById('accountExpenseDesc').value.trim();
+    const description = descInput || `Gasto em ${paymentLabels[method] || 'conta'}`;
+    const categoryInput = document.getElementById('accountExpenseCat').value;
+    const category = categoryInput || Categories.suggest(description);
+    const date = new Date().toISOString().split('T')[0];
+
+    Storage.addTransactions([{
+      id: `tx_${date}_${method}_${Date.now()}`,
+      date,
+      description,
+      amount: -Math.abs(amount),
+      category,
+      type: 'debit',
+      source: 'account',
+      txSubtype: method,
+      paymentMethod: method,
+      imported: false,
+    }]);
+
+    if (descInput && categoryInput) Storage.saveRule(descInput, categoryInput);
+    App.toast('Gasto adicionado', 'success');
+    allTxs = Storage.getTransactions();
+    render(document.getElementById('view-transactions'));
   };
 
   const renderList = () => {
@@ -139,6 +260,7 @@ const Transactions = (() => {
     const amtClass = t.amount < 0 ? 'negative' : 'positive';
     const amtStr = t.amount < 0 ? `- ${Engine.fmt(Math.abs(t.amount))}` : `+ ${Engine.fmt(t.amount)}`;
     const dateStr = new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+    const method = t.source === 'account' ? ` - ${paymentLabels[t.paymentMethod || t.txSubtype] || 'Conta'}` : '';
 
     return `
       <div class="tx-item" data-id="${t.id}">
@@ -146,7 +268,7 @@ const Transactions = (() => {
         <div class="tx-icon" style="background:${cat.bg}">${cat.emoji}</div>
         <div class="tx-info">
           <div class="tx-desc">${t.description}</div>
-          <div class="tx-meta">${dateStr}</div>
+          <div class="tx-meta">${dateStr}${method}</div>
           <span class="tx-cat-badge" style="background:${cat.bg};color:${cat.color}">${t.category}</span>
         </div>
         <div class="tx-amount ${amtClass}">${amtStr}</div>
@@ -244,6 +366,15 @@ const Transactions = (() => {
           <option value="recurring" ${t.type==='recurring'?'selected':''}>Recorrente</option>
         </select>
       </div>
+      ${t.source === 'account' ? `
+      <div class="form-group">
+        <label class="form-label">Forma</label>
+        <select class="form-input" id="editPaymentMethod">
+          <option value="debit_card" ${(t.paymentMethod || t.txSubtype)==='debit_card'?'selected':''}>D&eacute;bito</option>
+          <option value="pix_sent" ${(t.paymentMethod || t.txSubtype)==='pix_sent'?'selected':''}>Pix</option>
+          <option value="cash" ${(t.paymentMethod || t.txSubtype)==='cash'?'selected':''}>Dinheiro</option>
+        </select>
+      </div>` : ''}
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn btn-danger btn-sm" onclick="Transactions._deleteOne('${id}')">Excluir</button>
         <button class="btn btn-primary" style="flex:1" onclick="Transactions._saveEdit('${id}')">Salvar</button>
@@ -256,8 +387,15 @@ const Transactions = (() => {
     const desc = document.getElementById('editDesc').value.trim();
     const cat  = document.getElementById('editCat').value;
     const type = document.getElementById('editType').value;
-    Storage.updateTransaction(id, { description: desc, category: cat, type });
-    Storage.saveRule(desc, cat);
+    const paymentInput = document.getElementById('editPaymentMethod');
+    const patch = { description: desc || 'Gasto', category: cat, type };
+    if (paymentInput) {
+      patch.paymentMethod = paymentInput.value;
+      patch.txSubtype = paymentInput.value;
+      patch.source = 'account';
+    }
+    Storage.updateTransaction(id, patch);
+    if (desc) Storage.saveRule(desc, cat);
     App.closeModal();
     App.toast('Salvo!', 'success');
     allTxs = Storage.getTransactions();

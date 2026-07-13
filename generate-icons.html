@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gerar Ícones Tinpay</title>
+</head>
+<body>
+  <h1>Clique para baixar os ícones</h1>
+  <button onclick="downloadIcon(192)">Baixar icon-192.png</button>
+  <button onclick="downloadIcon(512)">Baixar icon-512.png</button>
+  
+  <script>
+    function downloadIcon(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      // Background
+      ctx.fillStyle = '#2563eb';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Icon (Tinpay logo)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = size * 0.05;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      const padding = size * 0.25;
+      const chartSize = size * 0.5;
+      
+      // Chart line
+      ctx.beginPath();
+      ctx.moveTo(padding, size * 0.7);
+      ctx.lineTo(padding + chartSize * 0.3, size * 0.5);
+      ctx.lineTo(padding + chartSize * 0.5, size * 0.6);
+      ctx.lineTo(padding + chartSize, size * 0.3);
+      ctx.stroke();
+      
+      // Circle
+      ctx.fillStyle = '#60a5fa';
+      ctx.beginPath();
+      ctx.arc(size * 0.75, size * 0.25, size * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `icon-${size}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "katchau",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "tinpay",
+  "start_url": "/",
+  "theme_color": "#2563EB"
+}

@@ -9,6 +9,9 @@ const App = (() => {
   };
 
   const init = async () => {
+    // Initialize Firebase
+    Storage.init();
+
     // Show splash
     document.getElementById('splash').classList.remove('hidden');
     document.getElementById('main').classList.add('hidden');

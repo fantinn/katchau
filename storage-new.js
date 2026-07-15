@@ -1,10 +1,55 @@
-// ── Storage Simplificado ───────────────────────────────
+// ── Storage Simplificado com Firebase ──────────────────
 const Storage = (() => {
   const KEYS = {
     DAILY: 'tinpay_daily',
     EXPENSES: 'tinpay_expenses',
     BILLS: 'tinpay_bills',
     CARDS: 'tinpay_cards',
+  };
+
+  let currentUser = null;
+  let db = null;
+
+  // Inicializar Firebase
+  const initFirebase = () => {
+    if (typeof firebase !== 'undefined' && firebase.database) {
+      db = firebase.database();
+      console.log('[Storage] Firebase inicializado');
+    } else {
+      console.warn('[Storage] Firebase não disponível, usando apenas localStorage');
+    }
+  };
+
+  // Obter caminho do usuário no Firebase
+  const getUserPath = () => {
+    const userKey = localStorage.getItem('tinpay_user') || 'default';
+    return `/users/${userKey}`;
+  };
+
+  // Salvar no Firebase
+  const saveToFirebase = (key, value) => {
+    if (db) {
+      const path = `${getUserPath()}/${key}`;
+      db.ref(path).set(value).catch(err => {
+        console.error('[Storage] Erro ao salvar no Firebase:', err);
+      });
+    }
+  };
+
+  // Carregar do Firebase
+  const loadFromFirebase = (key, callback) => {
+    if (db) {
+      const path = `${getUserPath()}/${key}`;
+      db.ref(path).once('value', (snapshot) => {
+        const value = snapshot.val();
+        if (value !== null) {
+          localStorage.setItem(key, JSON.stringify(value));
+          if (callback) callback(value);
+        }
+      }).catch(err => {
+        console.error('[Storage] Erro ao carregar do Firebase:', err);
+      });
+    }
   };
 
   const get = (key) => {
@@ -18,6 +63,7 @@ const Storage = (() => {
   const set = (key, value) => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
+      saveToFirebase(key, value);
     } catch (e) {
       console.error('Storage error:', e);
     }
@@ -179,7 +225,25 @@ const Storage = (() => {
     };
   };
 
+  // ── Sync Functions ─────────────────────────────────────
+  const syncFromFirebase = () => {
+    if (!db) return;
+
+    KEYS.DAILY && loadFromFirebase(KEYS.DAILY);
+    KEYS.EXPENSES && loadFromFirebase(KEYS.EXPENSES);
+    KEYS.BILLS && loadFromFirebase(KEYS.BILLS);
+    KEYS.CARDS && loadFromFirebase(KEYS.CARDS);
+  };
+
+  const setUser = (userKey) => {
+    localStorage.setItem('tinpay_user', userKey);
+    syncFromFirebase();
+  };
+
   return {
+    init: initFirebase,
+    sync: syncFromFirebase,
+    setUser,
     getDaily, addDaily, updateDaily, deleteDaily,
     getExpenses, addExpense, updateExpense, deleteExpense,
     getBills, addBill, updateBill, deleteBill,

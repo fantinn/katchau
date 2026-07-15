@@ -912,6 +912,67 @@ body {
   width: 100%;
 }
 
+/* ── Keypad ─────────────────────────────────────────── */
+.keypad-display {
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  padding: 20px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.keypad-btn {
+  aspect-ratio: 1;
+  border: none;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+}
+
+.keypad-btn:active {
+  transform: scale(0.95);
+  background: var(--surface2);
+}
+
+.keypad-zero {
+  grid-column: span 2;
+  aspect-ratio: auto;
+}
+
+.keypad-delete {
+  color: var(--red);
+}
+
+.keypad-clear {
+  color: var(--text2);
+}
+
+.keypad-confirm {
+  background: var(--primary);
+  color: white;
+}
+
+.keypad-confirm:active {
+  background: var(--primary-light);
+}
+
+.keypad-decimal {
+  color: var(--text2);
+}
+
 /* ── Toast ─────────────────────────────────────────── */
 #toast-container {
   position: fixed;
@@ -947,6 +1008,10 @@ body {
 
 .toast-success {
   background: var(--green);
+}
+
+.toast-warning {
+  background: #f59e0b;
 }
 
 /* ── Splash & DB Select ─────────────────────────────── */

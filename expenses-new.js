@@ -3,6 +3,26 @@ const Expenses = (() => {
   let currentMonth = null;
   let activeTab = 'daily'; // daily, bills, cards
 
+  const EXPENSE_CATEGORIES = [
+    'Alimentação',
+    'Combustível',
+    'Manutenção',
+    'Peças',
+    'Lavagem',
+    'Seguro',
+    'IPVA',
+    'Licenciamento',
+    'Telefone',
+    'Internet',
+    'Streaming',
+    'Farmácia',
+    'Saúde',
+    'Lazer',
+    'Roupa',
+    'Casa',
+    'Outros',
+  ];
+
   const fmt = (n) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
   };
@@ -20,7 +40,29 @@ const Expenses = (() => {
 
   const init = (container) => {
     if (!currentMonth) currentMonth = getCurrentMonth();
+    checkDueBills();
     render(container);
+  };
+
+  const checkDueBills = () => {
+    const bills = Storage.getBills();
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    // Check bills due today or in next 3 days
+    const upcomingBills = bills.filter(b => {
+      if (b.paid) return false;
+      const dueDate = new Date(b.dueDate);
+      const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 3;
+    });
+
+    if (upcomingBills.length > 0) {
+      const billNames = upcomingBills.map(b => b.name).join(', ');
+      setTimeout(() => {
+        App.toast(`Contas vencendo em breve: ${billNames}`, 'warning');
+      }, 1000);
+    }
   };
 
   const render = (container) => {
@@ -102,7 +144,6 @@ const Expenses = (() => {
       <div class="date-group">
         <div class="date-header">
           <span class="date-label">${dateLabel}</span>
-          <span class="date-total">${fmt(dayTotal)}</span>
         </div>
         <div class="date-expenses">
           ${expenses.map(e => renderExpense(e)).join('')}
@@ -231,11 +272,15 @@ const Expenses = (() => {
         </div>
         <div class="form-group">
           <label class="form-label">Valor</label>
-          <input class="form-input" type="number" id="expenseAmount" value="${expense ? expense.amount : ''}" placeholder="0.00" step="0.01" inputmode="decimal" />
+          <input class="form-input" type="text" id="expenseAmount" value="${expense ? fmt(expense.amount) : ''}" placeholder="R$ 0,00" readonly onclick="Expenses.openKeypad('expenseAmount')" />
         </div>
         <div class="form-group">
           <label class="form-label">Categoria</label>
-          <input class="form-input" type="text" id="expenseCategory" value="${expense ? (expense.category || '') : ''}" placeholder="Ex: Alimentação" />
+          <select class="form-input" id="expenseCategory">
+            ${EXPENSE_CATEGORIES.map(cat => `
+              <option value="${cat}" ${expense && expense.category === cat ? 'selected' : ''}>${cat}</option>
+            `).join('')}
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Descrição (opcional)</label>
@@ -247,9 +292,95 @@ const Expenses = (() => {
     `);
   };
 
+  let keypadTarget = null;
+  let keypadValue = '0';
+
+  const openKeypad = (targetId) => {
+    keypadTarget = targetId;
+    const currentValue = document.getElementById(targetId).value;
+    keypadValue = currentValue || '0';
+
+    App.openModal(`
+      <div class="modal-header">
+        <h2 class="modal-title">Valor</h2>
+        <button class="modal-close" onclick="App.closeModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="keypad-display">${fmt(parseFloat(keypadValue) || 0)}</div>
+        <div class="keypad">
+          <button class="keypad-btn" onclick="Expenses.keypadPress('7')">7</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('8')">8</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('9')">9</button>
+          <button class="keypad-btn keypad-delete" onclick="Expenses.keypadDelete()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          </button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('4')">4</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('5')">5</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('6')">6</button>
+          <button class="keypad-btn keypad-clear" onclick="Expenses.keypadClear()">C</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('1')">1</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('2')">2</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('3')">3</button>
+          <button class="keypad-btn keypad-confirm" onclick="Expenses.keypadConfirm()">✓</button>
+          <button class="keypad-btn keypad-zero" onclick="Expenses.keypadPress('0')">0</button>
+          <button class="keypad-btn" onclick="Expenses.keypadPress('00')">00</button>
+          <button class="keypad-btn keypad-decimal" onclick="Expenses.keypadPress('.')">,</button>
+        </div>
+      </div>
+    `);
+  };
+
+  const keypadPress = (value) => {
+    if (keypadValue === '0' && value !== '.') {
+      keypadValue = value;
+    } else if (value === '.' && keypadValue.includes('.')) {
+      return;
+    } else {
+      keypadValue += value;
+    }
+    updateKeypadDisplay();
+  };
+
+  const keypadDelete = () => {
+    if (keypadValue.length > 1) {
+      keypadValue = keypadValue.slice(0, -1);
+    } else {
+      keypadValue = '0';
+    }
+    updateKeypadDisplay();
+  };
+
+  const keypadClear = () => {
+    keypadValue = '0';
+    updateKeypadDisplay();
+  };
+
+  const parseCurrency = (str) => {
+    if (!str) return 0;
+    // Remove R$, espaços e converte vírgula para ponto
+    const cleaned = str.replace(/[R$\s]/g, '').replace(',', '.');
+    return parseFloat(cleaned) || 0;
+  };
+
+  const keypadConfirm = () => {
+    const numValue = parseFloat(keypadValue) || 0;
+    document.getElementById(keypadTarget).value = fmt(numValue);
+    App.closeModal();
+  };
+
+  const updateKeypadDisplay = () => {
+    const display = document.querySelector('.keypad-display');
+    if (display) {
+      display.textContent = fmt(parseFloat(keypadValue) || 0);
+    }
+  };
+
   const saveExpense = (id = null) => {
     const date = document.getElementById('expenseDate').value;
-    const amount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+    const amountStr = document.getElementById('expenseAmount').value;
+    const amount = parseCurrency(amountStr) || 0;
     const category = document.getElementById('expenseCategory').value.trim();
     const description = document.getElementById('expenseDesc').value.trim();
 
@@ -425,12 +556,12 @@ const Expenses = (() => {
     render(document.getElementById('view-expenses'));
   };
 
-  return { 
-    init, 
-    setTab, 
-    changeMonth, 
-    openModal, 
-    saveExpense, 
+  return {
+    init,
+    setTab,
+    changeMonth,
+    openModal,
+    saveExpense,
     deleteExpense,
     openBillModal,
     saveBill,
@@ -439,5 +570,10 @@ const Expenses = (() => {
     openCardModal,
     saveCard,
     deleteCard,
+    openKeypad,
+    keypadPress,
+    keypadDelete,
+    keypadClear,
+    keypadConfirm,
   };
 })();
